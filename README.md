@@ -1,72 +1,38 @@
-## Obsidian Sample Plugin
+# Etherpad-lite Obsidian Plugin
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+**This is a very pre-release version!  This code is likely to change!**
 
-This project uses Typescript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
+My first draft of everything happens in Obsidian.  The second draft usually happens in collaboration with others.  I find myself cutting and pasting my work into a Google Doc, sharing the URL with coworkers, and replacing the original with a link to the Google Doc.  This makes my work unsearchable, untaggable, and unlinkable.
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+This plugin uses an Etherpad-Lite server as a lightweight collaboration tool.  Etherpad-Lite is a web-based editor with no frills.  I've always thought of it as the "pastebin of editors."  With this plugin, you can upload any note to an Etherpad-Lite server, share the URL, and allow others to collaboratively edit.  The document remains in your vault.  Each time it's opened, its contents will be replaced with the latest version from the Etherpad-Lite server.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Changes the default font color to red using `styles.css`.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+There are three commands:
 
-### First time developing plugins?
+### Convert current note to Etherpad
 
-Quick starting guide for new plugin devs:
+This command uploads the text of the current note to your Etherpad-Lite server.  The id of the note on the server will be the same as the basename of the note in your vault.  This command adds a metadata key (`etherpad_id`) to the frontmatter of your document which signals to the plugin that this note canonically lives in the cloud.
 
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+### Replace note content from Etherpad
 
-### Releasing new releases
+This command explicitly replaces the contents of the current note with its version on the server. It uses the `etherpad_id` frontmatter key to determine where to fetch from.  If no such key exists, this command is a no-op.
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+This is exactly the behavior as when a note with an `etherpad-id` key is opened.
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+### Visit note in Etherpad in system browser
 
-### Adding your plugin to the community plugin list
+This command opens the Etherpad-Lite server in your system browser.  Copy the URL and share it with others!
 
-- Check https://github.com/obsidianmd/obsidian-releases/blob/master/plugin-review.md
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+## Configuration
 
-### How to use
+Set the server's `host`, `port`, and `apikey`.
 
-- Clone this repo.
-- `npm i` or `yarn` to install dependencies
-- `npm run dev` to start compilation in watch mode.
+The API key can be found in `APIKEY.txt` in the root of your server installation.
 
-### Manually installing the plugin
+## Set up an Etherpad-Lite server
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+_"Wait... I have to set up my own server?"_
 
-### Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+Easier than it sounds.  It can be done in AWS with a free-tier EC2 machine, or even in Heroku.  It takes about 2 minutes, but it's out of the scope of this document.  You can literally leave all the defaults as-is for a functional (but insecure) system.  Follow the [Etherpad-Lite instructions](https://github.com/ether/etherpad-lite).
 
+And don't forget to grab your API key from `APIKEY.txt`!
 
-### API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
