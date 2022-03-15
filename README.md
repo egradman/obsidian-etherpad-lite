@@ -38,3 +38,11 @@ Easier than it sounds.  It can be done in AWS with a free-tier EC2 machine, or e
 
 And don't forget to grab your API key from `APIKEY.txt`!
 
+## Caveats
+
+Etherpad-lite has some limited support for Markdown, but it's not really relevant to how this tool works.  Any formatting (bold, italic, underline) that you use in the Etherpad version will be stripped when it's fetched into your vault.
+
+Also, right now, list items are indented.  I'll fix that.
+
+Just figure that the version that people are editing on the Etherpad Lite server is just Markdown.
+
