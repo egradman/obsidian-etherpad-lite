@@ -6,6 +6,8 @@ My first draft of everything happens in Obsidian.  The second draft usually happ
 
 This plugin uses an Etherpad-Lite server as a lightweight collaboration tool.  Etherpad-Lite is a web-based editor with no frills.  I've always thought of it as the "pastebin of editors."  With this plugin, you can upload any note to an Etherpad-Lite server, share the URL, and allow others to collaboratively edit.  The document remains in your vault.  Each time it's opened, its contents will be replaced with the latest version from the Etherpad-Lite server.
 
+When you're happy with the results and don't want to sync anymore, simply remove the `etherpad_id` key from the frontmatter.
+
 There are three commands:
 
 ### Convert current note to Etherpad
