@@ -46,3 +46,6 @@ Also, right now, list items are indented.  I'll fix that.
 
 Just figure that the version that people are editing on the Etherpad Lite server is just Markdown.
 
+
+https://user-images.githubusercontent.com/103129/158699049-6d7801d9-82d0-416a-bcdb-dcdb6fd14987.mp4
+
