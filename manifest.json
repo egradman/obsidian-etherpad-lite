@@ -1,10 +1,10 @@
 {
 	"id": "obsidian-etherpad-plugin",
 	"name": "Etherpad",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"minAppVersion": "0.12.0",
 	"description": "Etherpad Integration",
 	"author": "egradman",
 	"authorUrl": "https://www.gradman.com",
-	"isDesktopOnly": false
+	"isDesktopOnly": true
 }
