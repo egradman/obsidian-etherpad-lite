@@ -2,6 +2,22 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Set
 
 let etherpad = require('etherpad-lite-client');
 import YAML from 'yaml'
+let TurndownService = require('turndown')
+
+let td = new TurndownService()
+  .addRule('strikethrough', {
+    filter: ['s'],
+    replacement: function (content) {
+      return '~~' + content + '~~'
+    }
+  })
+  .addRule('underline', {
+    filter: ['u'],
+    replacement: function (content) {
+      return '==' + content + '==';
+    }
+  })
+
 
 // Remember to rename these classes and interfaces!
 
@@ -177,10 +193,11 @@ export default class Etherpad extends Plugin {
   }
 
   async replace_note_from_etherpad(note) {
+    if (note == null) return;
     let frontmatter = this.get_frontmatter(note);
     if (!frontmatter) return;
     if (!frontmatter.etherpad_id) return;
-    this.etherpad.getText({padID: frontmatter.etherpad_id}, (err, data)=>{
+    this.etherpad.getHTML({padID: frontmatter.etherpad_id}, (err, data)=>{
       if (err) {
         console.log("err", err);
       } else {
@@ -188,7 +205,10 @@ export default class Etherpad extends Plugin {
         let now = new Date();
         frontmatter.etherpad_get_at = now.toLocaleString();
         let frontmatter_text = `---\n${YAML.stringify(frontmatter)}---\n`;
-        let note_text = data.text;
+        let note_html = data.html;
+
+        let note_text = td.turndown(note_html)
+        console.log(data.html);
         this.app.vault.modify(note, frontmatter_text + note_text);
         let url = this.get_url_for_pad_id(frontmatter.etherpad_id);
         new Notice(`Note was reloaded from ${url}.\nLocal edits will be discarded!`);
