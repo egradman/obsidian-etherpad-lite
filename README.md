@@ -42,6 +42,8 @@ I know.  This part feels like a bait-and-switch.
 
 - Command to disconnect document from Etherpad and delete remote version
 - Auto-update of document when its open?
+- option to prefer random pad_ids
+
 
 ## Caveats
 
