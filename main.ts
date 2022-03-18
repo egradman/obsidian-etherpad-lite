@@ -4,6 +4,19 @@ let etherpad = require('etherpad-lite-client');
 import YAML from 'yaml'
 let TurndownService = require('turndown')
 
+TurndownService.prototype.escape = (text)=>text;
+
+function makeid(length) {
+  var result           = '';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var charactersLength = characters.length;
+  for ( var i = 0; i < length; i++ ) {
+    result += characters.charAt(Math.floor(Math.random() * 
+charactersLength));
+ }
+ return result;
+}
+
 let td = new TurndownService()
   .addRule('strikethrough', {
     filter: ['s'],
@@ -17,6 +30,12 @@ let td = new TurndownService()
       return '==' + content + '==';
     }
   })
+  .addRule('a', {
+    filter: ['a'],
+    replacement: function(content, node, options) {
+      return node.getAttribute("href")
+    }
+  })
 
 
 // Remember to rename these classes and interfaces!
@@ -25,12 +44,14 @@ interface EtherpadSettings {
   host: string;
   port: int;
   apikey: string;
+  random_pad_id: bool;
 }
 
 const DEFAULT_SETTINGS: EtherpadSettings = {
   host: 'localhost',
   port: 9001,
-  apikey: ""
+  apikey: "",
+  random_pad_id: true
 }
 
 
@@ -70,7 +91,8 @@ export default class Etherpad extends Plugin {
           return;
 
         let note_text = await this.get_text_without_frontmatter(note);
-        let pad_id = note.basename;
+
+        let pad_id = this.settings.random_pad_id ? makeid(12) : note.basename;
 
         this.etherpad.createPad({
           padID: pad_id,
@@ -180,6 +202,7 @@ export default class Etherpad extends Plugin {
         frontmatter.etherpad_get_at = now.toLocaleString();
         let frontmatter_text = `---\n${YAML.stringify(frontmatter)}---\n`;
         let note_html = data.html;
+        console.log(note_html);
 
         let note_text = td.turndown(note_html)
         this.app.vault.modify(note, frontmatter_text + note_text);
@@ -251,6 +274,16 @@ class EtherpadSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.apikey)
         .onChange(async (value) => {
           this.plugin.settings.apikey = value;
+          await this.plugin.saveSettings();
+        }));
+
+    new Setting(containerEl)
+      .setName('Random pad ID')
+      .setDesc('Use a random pad id, or current file name')
+      .addToggle(b => b
+        .setValue(this.plugin.settings.random_pad_id)
+        .onChange(async (value) => {
+          this.plugin.settings.random_pad_id = value;
           await this.plugin.saveSettings();
         }));
   }
