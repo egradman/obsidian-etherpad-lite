@@ -1,16 +1,17 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, MarkdownView, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 let etherpad = require('etherpad-lite-client');
-import YAML from 'yaml'
+import { stringifyYaml } from 'obsidian';
+
 let TurndownService = require('turndown')
 
 TurndownService.prototype.escape = (text)=>text;
 
 function makeid(length) {
-  var result           = '';
-  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  var charactersLength = characters.length;
-  for ( var i = 0; i < length; i++ ) {
+  let result           = '';
+  let characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let charactersLength = characters.length;
+  for ( let i = 0; i < length; i++ ) {
     result += characters.charAt(Math.floor(Math.random() * 
 charactersLength));
  }
@@ -36,9 +37,6 @@ let td = new TurndownService()
       return node.getAttribute("href")
     }
   })
-
-
-// Remember to rename these classes and interfaces!
 
 interface EtherpadSettings {
   host: string;
@@ -70,8 +68,8 @@ export default class Etherpad extends Plugin {
     await this.loadSettings();
 
     // This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-    const statusBarItemEl = this.addStatusBarItem();
-    statusBarItemEl.setText('Status Bar Text');
+    //const statusBarItemEl = this.addStatusBarItem();
+    //statusBarItemEl.setText('Status Bar Text');
 
     this.registerEvent(
       this.app.workspace.on('file-open', async (note)=>{
@@ -85,24 +83,25 @@ export default class Etherpad extends Plugin {
       name: 'Convert current document to Etherpad',
       editorCallback: async (editor: Editor, view: MarkdownView) => {
 
-        const note = this.app.workspace.getActiveFile();
+        const note = view.file;
 
         if (!note.name)
           return;
 
-        let note_text = await this.get_text_without_frontmatter(note);
+        let note_text = editor.getValue();
+        let note_text_without_frontmatter = await this.get_text_without_frontmatter(note_text, note);
 
         let pad_id = this.settings.random_pad_id ? makeid(12) : note.basename;
 
         this.etherpad.createPad({
           padID: pad_id,
-          text: note_text
+          text: note_text_without_frontmatter
         }, (error, data)=>{
           if (error) {
             new Notice(`Error creating pad ${pad_id}: ${error.message}`);
           }
           else {
-            this.update_frontmatter(note, {etherpad_id: pad_id});
+            this.update_frontmatter(note_text, note, {etherpad_id: pad_id});
           }
         })
       }
@@ -112,7 +111,7 @@ export default class Etherpad extends Plugin {
       id: 'etherpad-get-pad',
       name: 'Replace note content from Etherpad',
       editorCallback: async (editor: Editor, view: MarkdownView) => {
-        const note = this.app.workspace.getActiveFile(); // Currently Open Note
+        const note = view.file;
         this.replace_note_from_etherpad(note);
       }
     });
@@ -121,14 +120,14 @@ export default class Etherpad extends Plugin {
       id: 'etherpad-visit-pad',
       name: 'Visit note in Etherpad in system browser',
       editorCallback: async (editor: Editor, view: MarkdownView) => {
-        const note = this.app.workspace.getActiveFile(); // Currently Open Note
+        let note = view.file;
         if (!note.name)
           return;
 
         let frontmatter = this.get_frontmatter(note);
         if (frontmatter?.etherpad_id) {
           let url = this.get_url_for_pad_id(frontmatter.etherpad_id);
-          require('electron').shell.openExternal(url);
+          window.open(url);
         }
       }
     });
@@ -155,8 +154,8 @@ export default class Etherpad extends Plugin {
     return {...this.app.metadataCache.getFileCache(note)?.frontmatter};
   }
 
-  async get_text_without_frontmatter(note) {
-    let note_text = await this.app.vault.read(note);
+  async get_text_without_frontmatter(note_text, note) {
+    //let note_text = await this.app.vault.read(note);
     let fmc = app.metadataCache.getFileCache(note)?.frontmatter;
     if (!fmc) {
       return note_text;
@@ -165,7 +164,7 @@ export default class Etherpad extends Plugin {
     return note_text.split("\n").slice(end).join("\n");
   }
 
-  async update_frontmatter(note, d) {
+  async update_frontmatter(note_text, note, d) {
     let frontmatter = this.get_frontmatter(note);
     let updated_frontmatter;
     if (!frontmatter) {
@@ -178,8 +177,8 @@ export default class Etherpad extends Plugin {
       };
     }
     delete updated_frontmatter.position;
-    let frontmatter_text = `---\n${YAML.stringify(updated_frontmatter)}---\n`;
-    let note_text = await this.get_text_without_frontmatter(note);
+    let frontmatter_text = `---\n${stringifyYaml(updated_frontmatter)}---\n`;
+    //let note_text = await this.get_text_without_frontmatter(note);
     this.app.vault.modify(note, frontmatter_text + note_text);
   }
 
@@ -196,13 +195,13 @@ export default class Etherpad extends Plugin {
     this.etherpad.getHTML({padID: frontmatter.etherpad_id}, (err, data)=>{
       if (err) {
         console.log("err", err);
+        new Notice("error: " + err);
       } else {
         delete frontmatter.position;
         let now = new Date();
         frontmatter.etherpad_get_at = now.toLocaleString();
-        let frontmatter_text = `---\n${YAML.stringify(frontmatter)}---\n`;
+        let frontmatter_text = `---\n${stringifyYaml(frontmatter)}---\n`;
         let note_html = data.html;
-        console.log(note_html);
 
         let note_text = td.turndown(note_html)
         this.app.vault.modify(note, frontmatter_text + note_text);
@@ -210,22 +209,6 @@ export default class Etherpad extends Plugin {
         new Notice(`Note was reloaded from ${url}.\nLocal edits will be discarded!`);
       }
     });
-  }
-}
-
-class EtherpadModal extends Modal {
-  constructor(app: App) {
-    super(app);
-  }
-
-  onOpen() {
-    const {contentEl} = this;
-    contentEl.setText('Woah!');
-  }
-
-  onClose() {
-    const {contentEl} = this;
-    contentEl.empty();
   }
 }
 
