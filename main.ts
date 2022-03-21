@@ -243,7 +243,7 @@ class EtherpadSettingTab extends PluginSettingTab {
       .setDesc('Server port')
       .addText(text => text
         .setPlaceholder('9001')
-        .setValue(this.plugin.settings.port)
+        .setValue(this.plugin.settings.port.toString())
         .onChange(async (value) => {
           this.plugin.settings.port = parseInt(value);
           await this.plugin.saveSettings();
