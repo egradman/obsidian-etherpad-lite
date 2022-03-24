@@ -47,4 +47,6 @@ I know.  This part feels like a bait-and-switch.
 
 ## Caveats
 
+- GAH!  It's currently broken on mobile due to some bad dependencies in a library I'm using.  I'll fix it very soon!
+
 https://user-images.githubusercontent.com/103129/158699049-6d7801d9-82d0-416a-bcdb-dcdb6fd14987.mp4
