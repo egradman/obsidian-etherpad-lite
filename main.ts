@@ -68,8 +68,8 @@ export default class Etherpad extends Plugin {
     await this.loadSettings();
 
     // This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-    //const statusBarItemEl = this.addStatusBarItem();
-    //statusBarItemEl.setText('Status Bar Text');
+    const statusBarItemEl = this.addStatusBarItem();
+    statusBarItemEl.setText('Status Bar Text');
 
     this.registerEvent(
       this.app.workspace.on('file-open', async (note)=>{
@@ -91,19 +91,37 @@ export default class Etherpad extends Plugin {
         let note_text = editor.getValue();
         let note_text_without_frontmatter = await this.get_text_without_frontmatter(note_text, note);
 
-        let pad_id = this.settings.random_pad_id ? makeid(12) : note.basename;
+        // check if pad exists and update
+        let frontmatter = this.get_frontmatter(note);
 
-        this.etherpad.createPad({
-          padID: pad_id,
-          text: note_text_without_frontmatter
-        }, (error, data)=>{
-          if (error) {
-            new Notice(`Error creating pad ${pad_id}: ${error.message}`);
-          }
-          else {
-            this.update_frontmatter(note_text, note, {etherpad_id: pad_id});
-          }
-        })
+        if (!frontmatter.etherpad_id){
+          let pad_id = this.settings.random_pad_id ? makeid(12) : note.basename;
+
+          this.etherpad.createPad({
+            padID: pad_id,
+            text: note_text_without_frontmatter
+          }, (error, data)=>{
+            if (error) {
+              new Notice(`Error creating pad ${pad_id}: ${error.message}`);
+            }
+            else {
+              this.update_frontmatter(note_text, note, {etherpad_id: pad_id});
+            }
+          })
+        } else {
+          let pad_id = frontmatter.etherpad_id;
+
+          this.etherpad.setText({
+            padID: pad_id,
+            text: note_text_without_frontmatter
+          }, (error, data)=>{
+            if (error) {
+              new Notice(`Error updating pad ${pad_id}: ${error.message}`);
+            }
+          })
+        }
+
+        
       }
     });
 
@@ -160,7 +178,8 @@ export default class Etherpad extends Plugin {
     if (!fmc) {
       return note_text;
     }
-    let end = fmc.position.end.line + 1 // account for ending ---
+    //let end = fmc.position.end.line + 1 // account for ending ---
+    let end = Object.keys(fmc).length + 2; // account for starting & ending ---
     return note_text.split("\n").slice(end).join("\n");
   }
 
