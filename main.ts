@@ -5,17 +5,17 @@ import { stringifyYaml } from 'obsidian';
 
 let TurndownService = require('turndown')
 
-TurndownService.prototype.escape = (text)=>text;
+TurndownService.prototype.escape = (text) => text;
 
 function makeid(length) {
-  let result           = '';
-  let characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let charactersLength = characters.length;
-  for ( let i = 0; i < length; i++ ) {
-    result += characters.charAt(Math.floor(Math.random() * 
-charactersLength));
- }
- return result;
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() *
+      charactersLength));
+  }
+  return result;
 }
 
 let td = new TurndownService()
@@ -33,7 +33,7 @@ let td = new TurndownService()
   })
   .addRule('a', {
     filter: ['a'],
-    replacement: function(content, node, options) {
+    replacement: function (content, node, options) {
       return node.getAttribute("href")
     }
   })
@@ -43,13 +43,15 @@ interface EtherpadSettings {
   port: int;
   apikey: string;
   random_pad_id: bool;
+  reload: boolean;
 }
 
 const DEFAULT_SETTINGS: EtherpadSettings = {
   host: 'localhost',
   port: 9001,
   apikey: "",
-  random_pad_id: true
+  random_pad_id: true,
+  reload: true
 }
 
 
@@ -68,12 +70,12 @@ export default class Etherpad extends Plugin {
     await this.loadSettings();
 
     // This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-    const statusBarItemEl = this.addStatusBarItem();
-    statusBarItemEl.setText('Status Bar Text');
+    //const statusBarItemEl = this.addStatusBarItem();
+    //statusBarItemEl.setText('Status Bar Text');
 
     this.registerEvent(
-      this.app.workspace.on('file-open', async (note)=>{
-        this.replace_note_from_etherpad(note);
+      this.app.workspace.on('file-open', async (note) => {
+        if (this.settings.reload) this.replace_note_from_etherpad(note);
       })
     );
 
@@ -94,18 +96,18 @@ export default class Etherpad extends Plugin {
         // check if pad exists and update
         let frontmatter = this.get_frontmatter(note);
 
-        if (!frontmatter.etherpad_id){
+        if (!frontmatter.etherpad_id) {
           let pad_id = this.settings.random_pad_id ? makeid(12) : note.basename;
 
           this.etherpad.createPad({
             padID: pad_id,
             text: note_text_without_frontmatter
-          }, (error, data)=>{
+          }, (error, data) => {
             if (error) {
               new Notice(`Error creating pad ${pad_id}: ${error.message}`);
             }
             else {
-              this.update_frontmatter(note_text, note, {etherpad_id: pad_id});
+              this.update_frontmatter(note_text, note, { etherpad_id: pad_id });
             }
           })
         } else {
@@ -114,14 +116,14 @@ export default class Etherpad extends Plugin {
           this.etherpad.setText({
             padID: pad_id,
             text: note_text_without_frontmatter
-          }, (error, data)=>{
+          }, (error, data) => {
             if (error) {
               new Notice(`Error updating pad ${pad_id}: ${error.message}`);
             }
           })
         }
 
-        
+
       }
     });
 
@@ -169,7 +171,7 @@ export default class Etherpad extends Plugin {
 
   get_frontmatter(note) {
     // return a copy
-    return {...this.app.metadataCache.getFileCache(note)?.frontmatter};
+    return { ...this.app.metadataCache.getFileCache(note)?.frontmatter };
   }
 
   async get_text_without_frontmatter(note_text, note) {
@@ -211,7 +213,7 @@ export default class Etherpad extends Plugin {
     let frontmatter = this.get_frontmatter(note);
     if (!frontmatter) return;
     if (!frontmatter.etherpad_id) return;
-    this.etherpad.getHTML({padID: frontmatter.etherpad_id}, (err, data)=>{
+    this.etherpad.getHTML({ padID: frontmatter.etherpad_id }, (err, data) => {
       if (err) {
         console.log("err", err);
         new Notice("error: " + err);
@@ -240,11 +242,11 @@ class EtherpadSettingTab extends PluginSettingTab {
   }
 
   display(): void {
-    const {containerEl} = this;
+    const { containerEl } = this;
 
     containerEl.empty();
 
-    containerEl.createEl('h2', {text: 'Etherpad Settings'});
+    containerEl.createEl('h2', { text: 'Etherpad Settings' });
 
     new Setting(containerEl)
       .setName('Server host')
@@ -286,6 +288,16 @@ class EtherpadSettingTab extends PluginSettingTab {
         .setValue(this.plugin.settings.random_pad_id)
         .onChange(async (value) => {
           this.plugin.settings.random_pad_id = value;
+          await this.plugin.saveSettings();
+        }));
+
+    new Setting(containerEl)
+      .setName('Reload from Etherpad on open')
+      .setDesc('Download Pad content when Markdown is opened')
+      .addToggle(b => b
+        .setValue(this.plugin.settings.reload)
+        .onChange(async (value) => {
+          this.plugin.settings.reload = value;
           await this.plugin.saveSettings();
         }));
   }
